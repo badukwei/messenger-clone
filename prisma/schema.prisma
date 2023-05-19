@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Generate a Prisma Client in JavaScript
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Configure the connection to your database
+datasource db {
+  provider = "mongodb"  // Specify the database provider
+  url      = env("DATABASE_URL")  // Connection string to your database
+}
+
+// Define a User model for your application
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId  // Define the primary key
+  name           String?  // Optional name field
+  email          String?   @unique  // Optional email field which must be unique
+  emailVerified  DateTime?  // Optional timestamp for when the email was verified
+  image          String?  // Optional image URL or path
+  hashedPassword String?  // Optional hashed password
+  createdAt      DateTime  @default(now())  // Auto-set the creation timestamp
+  updatedAt      DateTime  @updatedAt  // Auto-update the modification timestamp
+
+  // Relations
+  conversationIds String[]       @db.ObjectId  // List of related Conversation IDs
+  conversations   Conversation[] @relation(fields: [conversationIds], references: [id])  // List of related Conversations
+
+  seenMessageIds String[]  @db.ObjectId  // List of Message IDs that the user has seen
+  seenMessages   Message[] @relation("Seen", fields: [seenMessageIds], references: [id])  // List of Messages that the user has seen
+
+  accounts Account[]  // List of related Accounts
+  messages Message[]  // List of related Messages
+}
+
+// Define an Account model for your application
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId  // Define the primary key
+  userId            String  @db.ObjectId  // Related User ID
+  type              String  // Type of account
+  provider          String  // Provider of the account
+  providerAccountId String  // ID from the provider
+  // Other optional fields
+  refresh_token     String?  @db.String
+  access_token      String?  @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)  // Related User
+
+  @@unique([provider, providerAccountId])  // Unique constraint on provider and providerAccountId
+}
+
+// Define a Conversation model for your application
+model Conversation {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId  // Define the primary key
+  createdAt     DateTime @default(now())  // Auto-set the creation timestamp
+  lastMessageAt DateTime @default(now())  // Timestamp of the last message
+  name          String?  // Optional name of the conversation
+  isGroup       Boolean?  // Flag indicating if this is a group conversation
+
+  // Relations
+  messagesIds String[]  @db.ObjectId  // List of related Message IDs
+  messages    Message[]  // List of related Messages
+
+  userIds String[] @db.ObjectId  // List of related User IDs
+  users   User[]   @relation(fields: [userIds], references: [id])  // List of related Users
+}
+
+// Define a Message model for your application
+model Message {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId  // Define the primary key
+  body      String?  // Optional message body
+  image     String?  // Optional image URL or path
+  createdAt DateTime @default(now())  // Auto-set the creation timestamp
+
+  // Relations
+  seenIds String[] @db.ObjectId  // List of User IDs that have seen this message
+  seen    User[]   @relation("Seen", fields: [seenIds], references: [id])  // List of Users that have seen this message
+
+  conversationId String       @db.ObjectId  // Related Conversation ID
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)  // Related Conversation
+
+  senderId String @db.ObjectId  // ID of the User who sent this message
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)  // User who sent this message
+}
