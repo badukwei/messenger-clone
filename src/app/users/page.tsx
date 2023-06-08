@@ -1,11 +1,11 @@
-import React from 'react'
+import EmptyState from "../components/EmptyState";
 
 const Users = () => {
   return (
-    <div>
-      <h1>Hello Users</h1>
+    <div className="hidden lg:block lg:pl-80 h-full">
+      <EmptyState />
     </div>
-  )
+  );
 }
 
-export default Users
+export default Users;
